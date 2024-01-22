@@ -9,6 +9,7 @@ import {
 } from '@capacitor-mlkit/barcode-scanning';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { BarcodeScanningModalComponent } from './barcode-scanning-modal.component';
+import { ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-barcode-scanning',
@@ -35,6 +36,7 @@ export class BarcodeScanningPage implements OnInit {
   constructor(
     private readonly dialogService: DialogService,
     private readonly ngZone: NgZone,
+    private toastController: ToastController
   ) {}
 
   public ngOnInit(): void {
@@ -77,25 +79,41 @@ export class BarcodeScanningPage implements OnInit {
     });
     element.onDidDismiss().then((result) => {
       const barcode: Barcode | undefined = result.data?.barcode;
+      console.log('barcode :>> ', barcode?.displayValue);
       if (barcode) {
-        this.barcodes = [barcode];
+        this.presentToast("top");
+
+        const thing = [...this.barcodes, barcode];
+        this.barcodes = thing;
       }
     });
   }
 
-  public async readBarcodeFromImage(): Promise<void> {
-    const { files } = await FilePicker.pickImages({ multiple: false });
-    const path = files[0]?.path;
-    if (!path) {
-      return;
-    }
-    const formats = this.formGroup.get('formats')?.value || [];
-    const { barcodes } = await BarcodeScanner.readBarcodesFromImage({
-      path,
-      formats,
+  async presentToast(position: 'top' | 'middle' | 'bottom') {
+    const toast = await this.toastController.create({
+      message: 'Hello World!',
+      duration: 1500,
+      position: position,
     });
-    this.barcodes = barcodes;
+
+    console.log('toasty!');
+
+    await toast.present();
   }
+
+  // public async readBarcodeFromImage(): Promise<void> {
+  //   const { files } = await FilePicker.pickImages({ multiple: false });
+  //   const path = files[0]?.path;
+  //   if (!path) {
+  //     return;
+  //   }
+  //   const formats = this.formGroup.get('formats')?.value || [];
+  //   const { barcodes } = await BarcodeScanner.readBarcodesFromImage({
+  //     path,
+  //     formats,
+  //   });
+  //   this.barcodes = barcodes;
+  // }
 
   public async scan(): Promise<void> {
     const formats = this.formGroup.get('formats')?.value || [];

@@ -16,7 +16,7 @@ import {
   LensFacing,
   StartScanOptions,
 } from '@capacitor-mlkit/barcode-scanning';
-import { InputCustomEvent } from '@ionic/angular';
+import { InputCustomEvent, ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-barcode-scanning',
@@ -49,12 +49,25 @@ import { InputCustomEvent } from '@ionic/angular';
           </ion-fab-button>
         </ion-fab>
       }
+
+      <ion-list>
+        <ion-item>
+          <ion-label>Reminders</ion-label>
+          <ion-button slot="end">Remove</ion-button>
+        </ion-item>
+      </ion-list>
+
     </ion-content>
   `,
   styles: [
     `
       ion-content {
         --background: transparent;
+      }
+
+      ion-list {
+        position: absolute;
+        bottom: 0;
       }
 
       .square {
@@ -97,6 +110,7 @@ export class BarcodeScanningModalComponent
   constructor(
     private readonly dialogService: DialogService,
     private readonly ngZone: NgZone,
+    private toastController: ToastController
   ) {}
 
   public ngOnInit(): void {
@@ -186,6 +200,8 @@ export class BarcodeScanningModalComponent
               detectionCornerPoints[3][0] > cornerPoints[3][0] ||
               detectionCornerPoints[3][1] < cornerPoints[3][1]
             ) {
+              console.log('scanned...', event.barcode);
+              this.presentToast("top");
               return;
             }
           }
@@ -201,6 +217,18 @@ export class BarcodeScanningModalComponent
     void BarcodeScanner.getMaxZoomRatio().then((result) => {
       this.maxZoomRatio = result.zoomRatio;
     });
+  }
+
+  async presentToast(position: 'top' | 'middle' | 'bottom') {
+    // const toast = await this.toastController.create({
+    //   message: 'Hello World!',
+    //   duration: 30000000,
+    //   position: position,
+    // });
+
+    // console.log('toasty!');
+
+    // await toast.present();
   }
 
   private async stopScan(): Promise<void> {
