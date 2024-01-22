@@ -34,28 +34,25 @@ import { InputCustomEvent, ToastController } from '@ionic/angular';
 
     <ion-content>
       <div #square class="square"></div>
-      <div class="zoom-ratio-wrapper">
-        <ion-range
-          [min]="minZoomRatio"
-          [max]="maxZoomRatio"
-          [disabled]="minZoomRatio === undefined || maxZoomRatio === undefined"
-          (ionChange)="setZoomRatio($any($event))"
-        ></ion-range>
-      </div>
-      @if (isTorchAvailable) {
-        <ion-fab slot="fixed" horizontal="end" vertical="bottom">
-          <ion-fab-button (click)="toggleTorch()">
-            <ion-icon name="flashlight"></ion-icon>
-          </ion-fab-button>
-        </ion-fab>
-      }
 
-      <ion-list>
-        <ion-item>
-          <ion-label>Reminders</ion-label>
-          <ion-button slot="end">Remove</ion-button>
-        </ion-item>
-      </ion-list>
+      <ion-card>
+      <ion-card-header>
+        <ion-card-title>Card Title</ion-card-title>
+        <ion-card-subtitle>Card Subtitle</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-button expand="block" (click)="startScan()">Start Scanner</ion-button>
+
+        <ion-list>
+          <ng-container *ngFor="let barcode of scanBarcodes">
+          <ion-item>
+            <ion-label>{{ barcode.displayValue }}</ion-label>
+          </ion-item>
+          </ng-container>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
 
     </ion-content>
   `,
@@ -65,9 +62,11 @@ import { InputCustomEvent, ToastController } from '@ionic/angular';
         --background: transparent;
       }
 
-      ion-list {
+      ion-card {
+        background: #fff;
         position: absolute;
         bottom: 0;
+        width: 90%;
       }
 
       .square {
@@ -80,14 +79,6 @@ import { InputCustomEvent, ToastController } from '@ionic/angular';
         height: 200px;
         border: 6px solid white;
         box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
-      }
-
-      .zoom-ratio-wrapper {
-        position: absolute;
-        left: 50%;
-        bottom: 16px;
-        transform: translateX(-50%);
-        width: 50%;
       }
     `,
   ],
@@ -103,21 +94,14 @@ export class BarcodeScanningModalComponent
   @ViewChild('square')
   public squareElement: ElementRef<HTMLDivElement> | undefined;
 
-  public isTorchAvailable = false;
-  public minZoomRatio: number | undefined;
-  public maxZoomRatio: number | undefined;
+  public scanBarcodes: Barcode[] = [];
 
   constructor(
     private readonly dialogService: DialogService,
-    private readonly ngZone: NgZone,
-    private toastController: ToastController
+    private readonly ngZone: NgZone
   ) {}
 
-  public ngOnInit(): void {
-    BarcodeScanner.isTorchAvailable().then((result) => {
-      this.isTorchAvailable = result.available;
-    });
-  }
+  public ngOnInit(): void {}
 
   public ngAfterViewInit(): void {
     setTimeout(() => {
@@ -129,23 +113,10 @@ export class BarcodeScanningModalComponent
     this.stopScan();
   }
 
-  public setZoomRatio(event: InputCustomEvent): void {
-    if (!event.detail.value) {
-      return;
-    }
-    BarcodeScanner.setZoomRatio({
-      zoomRatio: parseInt(event.detail.value as any, 10),
-    });
-  }
-
   public async closeModal(barcode?: Barcode): Promise<void> {
     this.dialogService.dismissModal({
       barcode: barcode,
     });
-  }
-
-  public async toggleTorch(): Promise<void> {
-    await BarcodeScanner.toggleTorch();
   }
 
   private async startScan(): Promise<void> {
@@ -201,7 +172,9 @@ export class BarcodeScanningModalComponent
               detectionCornerPoints[3][1] < cornerPoints[3][1]
             ) {
               console.log('scanned...', event.barcode);
-              this.presentToast("top");
+              this.scanBarcodes.push(event.barcode);
+              //this.stopScan();
+              listener.remove();
               return;
             }
           }
@@ -211,24 +184,6 @@ export class BarcodeScanningModalComponent
       },
     );
     await BarcodeScanner.startScan(options);
-    void BarcodeScanner.getMinZoomRatio().then((result) => {
-      this.minZoomRatio = result.zoomRatio;
-    });
-    void BarcodeScanner.getMaxZoomRatio().then((result) => {
-      this.maxZoomRatio = result.zoomRatio;
-    });
-  }
-
-  async presentToast(position: 'top' | 'middle' | 'bottom') {
-    // const toast = await this.toastController.create({
-    //   message: 'Hello World!',
-    //   duration: 30000000,
-    //   position: position,
-    // });
-
-    // console.log('toasty!');
-
-    // await toast.present();
   }
 
   private async stopScan(): Promise<void> {
